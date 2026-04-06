@@ -227,10 +227,19 @@ cvRouter.post('/cv/analyse', async (req, res: Response) => {
     const payload = { ...profileWithoutText, extractedAt }
 
     // Persist analysis to the cv_profiles row (authenticated users with a real profile ID)
+    // When force=true, also clear the cached candidate_profile so the next job search re-extracts fresh
     if (profileRowId && userId !== '00000000-0000-0000-0000-000000000000') {
+      const updatePayload: Record<string, unknown> = {
+        analysis: profileWithoutText,
+        analysis_extracted_at: extractedAt,
+      }
+      if (force) {
+        updatePayload.candidate_profile = null
+        updatePayload.candidate_profile_extracted_at = null
+      }
       await supabaseAdmin
         .from('cv_profiles')
-        .update({ analysis: profileWithoutText, analysis_extracted_at: extractedAt })
+        .update(updatePayload)
         .eq('id', profileRowId)
         .eq('user_id', userId)
     }
