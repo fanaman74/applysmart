@@ -13,13 +13,40 @@ import type {
 // ─── Source descriptions — what each platform is and how to search it ─────────
 
 const SOURCE_DESCRIPTIONS: Record<string, string> = {
-  'linkedin': `Search LinkedIn Jobs (linkedin.com/jobs) for relevant roles. Use the candidate's target titles and location as search terms. Filter by date posted (last 30 days). Read actual job listings.`,
-  'indeed': `Search Indeed (indeed.com or indeed.be) for relevant roles matching the candidate's profile. Use their target job titles and location/country as search filters. Check both full-time and contract listings.`,
-  'eurobrussels': `Search Eurobrussels (eurobrussels.eu) — a specialist job board for EU institutions, international organisations, NGOs, and Brussels-based policy roles. This is ideal for candidates with EU institution backgrounds.`,
-  'euractiv-jobs': `Search Euractiv Jobs (euractiv.com/jobs) for roles in EU policy, international organisations, public affairs, and Brussels-based institutions. Focus on roles matching the candidate's sector and experience.`,
-  'weworkremotely': `Search We Work Remotely (weworkremotely.com) for remote roles matching the candidate's profile. Check all relevant categories — not just technology.`,
-  'google-jobs': `Use web search to find jobs via Google Jobs aggregation. Search using the candidate's combo_queries (Boolean search strings). Check Greenhouse, Lever, Ashby, and direct employer career pages that surface in results.`,
-  'glassdoor': `Search Glassdoor (glassdoor.com) for jobs matching the candidate's profile. Use their target titles and location. Check both job listings and company pages for open roles.`,
+  'linkedin': `Search LinkedIn Jobs (https://www.linkedin.com/jobs/search/?keywords=TITLE&location=Brussels) for relevant roles. Try the candidate's top 3 target titles as separate searches. Filter by date posted (last 30 days). Click into individual listings to read the full JD.`,
+
+  'indeed': `Search Indeed Belgium (https://be.indeed.com/jobs?q=TITLE&l=Brussels or https://www.indeed.com/jobs?q=TITLE&l=Brussels%2C+Belgium). Try each of the candidate's top target titles. Also try the international Indeed (indeed.com). Read full job descriptions for each match.`,
+
+  'eurobrussels': `Search EuroBrussels (https://www.eurobrussels.com/job_search) — the premier Brussels job board for EU institutions, international organisations, NGOs, consultancies, and policy roles.
+
+STEP-BY-STEP:
+1. Go to https://www.eurobrussels.com/job_search and search using the candidate's profession/title
+2. Also browse category pages:
+   - https://www.eurobrussels.com/jobs/eu_institution (EU institution jobs)
+   - https://www.eurobrussels.com/jobs/operations (IT/operations roles)
+   - https://www.eurobrussels.com/jobs/policy (policy roles)
+3. Alternatively use Google: search 'site:eurobrussels.com "IT project manager" OR "IT officer" OR "project manager"'
+4. Click into each listing and read the full job description before scoring.`,
+
+  'euractiv-jobs': `Search Euractiv Jobs (https://jobs.euractiv.com) — a specialist job board for EU policy, public affairs, international organisations, and Brussels institutions.
+
+STEP-BY-STEP:
+1. Go to https://jobs.euractiv.com and use the keyword search with the candidate's target titles
+2. Filter by "Technology" or "Operations" category if available
+3. Also try a Google search: 'site:jobs.euractiv.com "IT" OR "project manager" OR "digital"'
+4. Euractiv lists roles from EU institutions, think tanks, NGOs, EU agencies, and consultancies. Read the full JD for each match.`,
+
+  'weworkremotely': `Search We Work Remotely (https://weworkremotely.com) for remote roles matching the candidate's profile. Navigate to https://weworkremotely.com/remote-jobs/search?term=TITLE for each target title. Check all categories — not just technology. Also look at "Management & Finance" and "Operations" categories.`,
+
+  'google-jobs': `Use web search to find jobs via Google Jobs and direct employer career pages.
+Search strategies:
+1. Use the candidate's Boolean combo queries directly as search terms
+2. Search '"IT project manager" Brussels site:greenhouse.io OR site:lever.co OR site:ashby.com'
+3. Search 'EU institutions "IT officer" OR "project manager" apply site:workday.com OR site:taleo.net'
+4. Check results from EU agency career portals (EPSO, EMA, EIB, Frontex, Europol etc.)
+Read each job listing fully before scoring.`,
+
+  'glassdoor': `Search Glassdoor (https://www.glassdoor.com/Job/brussels-it-project-manager-jobs-SRCH_IL.0,8_IC2660204_KO9,27.htm or similar URL pattern) for jobs. Also try https://www.glassdoor.co.uk/Job/ with the candidate's titles and Brussels as location. Read full JDs including salary info where visible.`,
 }
 
 interface JobSearchAgent {
@@ -111,19 +138,25 @@ Return ONLY valid JSON with this structure:
 
 Only include jobs with score >= ${config.scoreThreshold}. Find up to 8 qualifying jobs. Actually browse the site and read real job listings — do not fabricate jobs.`
 
+  const euroFallback = (source === 'eurobrussels' || source === 'euractiv-jobs')
+    ? `\nFALLBACK: If direct site navigation is blocked, use web_search with: site:${source === 'eurobrussels' ? 'eurobrussels.com' : 'jobs.euractiv.com'} ${profile.profession} ${profile.location}`
+    : ''
+
   const userPrompt = `${SOURCE_DESCRIPTIONS[source] ?? `Search this platform for jobs matching the candidate profile.`}
 
 Search for roles matching this candidate:
-- ${profile.profession} with ${profile.yearsExperience} years experience
-- Target roles: ${profile.targetTitles.slice(0, 5).join(', ')}
-- Key skills: ${profile.primaryStack.slice(0, 5).join(', ')}
-${config.remoteOnly ? '- Remote only positions' : `- Based in or near ${profile.location}`}
+- Profession: ${profile.profession}, ${profile.yearsExperience} years experience, ${profile.level} level
+- Location: ${profile.location}
+- Target roles: ${profile.targetTitles.slice(0, 6).join(', ')}
+- Key skills: ${profile.primaryStack.slice(0, 6).join(', ')}
+${config.remoteOnly ? '- Remote only positions' : `- Prefer roles in or near ${profile.location}, or remote`}
 ${config.minSalary ? `- Minimum salary: €${config.minSalary.toLocaleString()}` : ''}
 
-Use these search queries:
-${profile.searchQueries.titleQueries.slice(0, 4).map((q) => `- "${q}"`).join('\n')}
+Search queries to use (try each one):
+${profile.searchQueries.titleQueries.slice(0, 5).map((q) => `- "${q}"`).join('\n')}
+${euroFallback}
 
-Browse actual job listings, read the full descriptions, score them against the rubric, and return the JSON response with all qualifying jobs.`
+IMPORTANT: You must actually use the web_search tool to find real job listings. Do not invent or fabricate job listings. Browse the actual pages, read the full job descriptions, score each against the rubric, and return the JSON response with all qualifying jobs found. If you find fewer than 3 jobs, try additional search queries.`
 
   return { source, systemPrompt, userPrompt }
 }
@@ -138,7 +171,7 @@ async function runSearchAgent(agent: JobSearchAgent): Promise<JobSearchAgentResu
         {
           type: 'web_search_20250305' as const,
           name: 'web_search',
-          max_uses: 10,
+          max_uses: 15,
         } as unknown as Anthropic.Tool,
       ],
       messages: [{ role: 'user', content: agent.userPrompt }],

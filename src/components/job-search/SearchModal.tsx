@@ -14,7 +14,7 @@ import type { AgentStatus, CandidateProfile } from '../../stores/jobSearchStore'
 const SOURCE_META: Record<string, { label: string; flag: string; colour: string }> = {
   linkedin:        { label: 'LinkedIn Jobs',    flag: '💼', colour: 'bg-sky-500/15 border-sky-500/30 text-sky-400' },
   indeed:          { label: 'Indeed',           flag: '🔍', colour: 'bg-blue-500/15 border-blue-500/30 text-blue-400' },
-  eurobrussels:    { label: 'Eurobrussels',     flag: '🇪🇺', colour: 'bg-amber-500/15 border-amber-500/30 text-amber-400' },
+  eurobrussels:    { label: 'EuroBrussels',     flag: '🇪🇺', colour: 'bg-amber-500/15 border-amber-500/30 text-amber-400' },
   'euractiv-jobs': { label: 'Euractiv Jobs',    flag: '📰', colour: 'bg-purple-500/15 border-purple-500/30 text-purple-400' },
   weworkremotely:  { label: 'We Work Remotely', flag: '🌍', colour: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' },
   'google-jobs':   { label: 'Google Jobs',      flag: '🔎', colour: 'bg-rose-500/15 border-rose-500/30 text-rose-400' },

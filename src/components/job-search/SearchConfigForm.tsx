@@ -27,7 +27,7 @@ interface SearchConfigFormProps {
 const SOURCE_OPTIONS = [
   { id: 'linkedin', label: 'LinkedIn Jobs' },
   { id: 'indeed', label: 'Indeed' },
-  { id: 'eurobrussels', label: 'Eurobrussels' },
+  { id: 'eurobrussels', label: 'EuroBrussels' },
   { id: 'euractiv-jobs', label: 'Euractiv Jobs' },
   { id: 'weworkremotely', label: 'We Work Remotely' },
   { id: 'google-jobs', label: 'Google Jobs' },

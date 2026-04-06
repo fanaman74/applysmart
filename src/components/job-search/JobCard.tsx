@@ -12,7 +12,7 @@ interface JobCardProps {
 const SOURCE_LABELS: Record<string, string> = {
   linkedin: 'LinkedIn',
   indeed: 'Indeed',
-  eurobrussels: 'Eurobrussels',
+  eurobrussels: 'EuroBrussels',
   'euractiv-jobs': 'Euractiv',
   weworkremotely: 'WWR',
   'google-jobs': 'Google Jobs',
