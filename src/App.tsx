@@ -12,6 +12,7 @@ import Tracker from './pages/Tracker'
 import Settings from './pages/Settings'
 import JobSearch from './pages/JobSearch'
 import CvAnalysisReport from './pages/CvAnalysisReport'
+import Applying from './pages/Applying'
 
 function AppRoutes() {
   const { initialize } = useAuth()
@@ -52,6 +53,14 @@ function AppRoutes() {
           }
         />
         <Route path="/job-search" element={<JobSearch />} />
+        <Route
+          path="/applying"
+          element={
+            <AuthGuard>
+              <Applying />
+            </AuthGuard>
+          }
+        />
         <Route path="/cv-report" element={<CvAnalysisReport />} />
         <Route
           path="/settings"

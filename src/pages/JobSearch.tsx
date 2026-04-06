@@ -410,10 +410,15 @@ export default function JobSearch() {
                 )}
               </div>
 
-              <div className="flex justify-center">
+              <div className="flex items-center justify-center gap-3">
                 <Button onClick={reset} variant="ghost">
                   <RotateCcw size={14} className="mr-2" /> New Search
                 </Button>
+                {session && (
+                  <Button onClick={() => navigate('/applying')} variant="secondary">
+                    View All Applications →
+                  </Button>
+                )}
               </div>
             </>
           )}

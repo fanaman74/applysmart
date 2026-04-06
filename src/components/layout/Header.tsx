@@ -7,7 +7,7 @@ import { cn } from '../../lib/cn'
 const navLinks = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/job-search', label: 'Job Search' },
-  { to: '/tracker', label: 'Tracker' },
+  { to: '/applying', label: 'Applying' },
 ]
 
 export function Header() {
