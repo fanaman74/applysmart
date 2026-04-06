@@ -221,34 +221,66 @@ IMPORTANT: You must actually use the web_search tool to find real job listings. 
 
 async function runSearchAgent(agent: JobSearchAgent): Promise<JobSearchAgentResult> {
   try {
-    const response = await anthropic.messages.create({
+    const tools: Anthropic.Tool[] = [
+      {
+        type: 'web_search_20250305' as const,
+        name: 'web_search',
+        max_uses: 15,
+      } as unknown as Anthropic.Tool,
+    ]
+
+    const firstResponse = await anthropic.messages.create({
       model: DEFAULT_MODEL,
       max_tokens: 8192,
       system: agent.systemPrompt,
-      tools: [
-        {
-          type: 'web_search_20250305' as const,
-          name: 'web_search',
-          max_uses: 15,
-        } as unknown as Anthropic.Tool,
-      ],
+      tools,
       messages: [{ role: 'user', content: agent.userPrompt }],
     })
 
-    // Extract the final text response (may come after tool use)
-    const textBlocks = response.content.filter((b) => b.type === 'text')
-    const lastText = textBlocks[textBlocks.length - 1]
-    if (!lastText || lastText.type !== 'text') {
-      return { source: agent.source, jobs: [], error: 'No text response from agent' }
+    // Helper: find the last JSON object across all text blocks
+    function extractJson(content: Anthropic.ContentBlock[]): string | null {
+      const textBlocks = content.filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      // Search from the last text block backwards so we get the final JSON
+      for (let i = textBlocks.length - 1; i >= 0; i--) {
+        const match = textBlocks[i].text.match(/\{[\s\S]*"jobs"[\s\S]*\}/)
+        if (match) return match[0]
+      }
+      // Fallback: any JSON object in any text block
+      for (let i = textBlocks.length - 1; i >= 0; i--) {
+        const match = textBlocks[i].text.match(/\{[\s\S]*\}/)
+        if (match) return match[0]
+      }
+      return null
     }
 
-    const text = lastText.text.trim()
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
+    let jsonStr = extractJson(firstResponse.content)
+
+    // If Claude ended with tool_use or returned no JSON, send a follow-up
+    // asking it to now produce the JSON output
+    if (!jsonStr) {
+      const followUp = await anthropic.messages.create({
+        model: DEFAULT_MODEL,
+        max_tokens: 4096,
+        system: agent.systemPrompt,
+        tools,
+        messages: [
+          { role: 'user', content: agent.userPrompt },
+          { role: 'assistant', content: firstResponse.content },
+          {
+            role: 'user',
+            content:
+              'Based on your research above, now return ONLY the JSON object. No explanation, no markdown fences, just the raw JSON starting with { and ending with }. If you found no qualifying jobs, return {"jobs":[]}.',
+          },
+        ],
+      })
+      jsonStr = extractJson(followUp.content)
+    }
+
+    if (!jsonStr) {
       return { source: agent.source, jobs: [], error: 'No JSON found in response' }
     }
 
-    const parsed = JSON.parse(jsonMatch[0]) as { jobs?: FoundJob[] }
+    const parsed = JSON.parse(jsonStr) as { jobs?: FoundJob[] }
     return { source: agent.source, jobs: parsed.jobs ?? [] }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
