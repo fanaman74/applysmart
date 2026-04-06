@@ -111,13 +111,13 @@ cvRouter.post(
   },
 )
 
-// GET /cv/list — List current user's CV profiles
+// GET /cv/list — List current user's CV profiles (includes saved analysis if available)
 cvRouter.get('/cv/list', async (req, res: Response) => {
   const userId = req.userId ?? '00000000-0000-0000-0000-000000000000'
 
   const { data, error } = await supabaseAdmin
     .from('cv_profiles')
-    .select('id, filename, file_type, extracted_text, created_at')
+    .select('id, filename, file_type, extracted_text, analysis, analysis_extracted_at, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
@@ -133,6 +133,8 @@ cvRouter.get('/cv/list', async (req, res: Response) => {
     charCount: row.extracted_text?.length ?? 0,
     createdAt: row.created_at,
     extractedText: row.extracted_text ?? '',
+    analysis: row.analysis ?? null,
+    analysisExtractedAt: row.analysis_extracted_at ?? null,
   }))
 
   res.json({ profiles })
@@ -178,43 +180,88 @@ cvRouter.delete('/cv/:id', authMiddleware, async (req, res: Response) => {
 })
 
 // POST /cv/analyse — Deep AI analysis of a CV, producing a structured candidate profile
+// If cvProfileId is provided and a saved analysis exists, returns the cached version unless force=true.
 cvRouter.post('/cv/analyse', async (req, res: Response) => {
-  const { cvText, cvProfileId } = req.body as { cvText?: string; cvProfileId?: string }
+  const { cvText, cvProfileId, force } = req.body as { cvText?: string; cvProfileId?: string; force?: boolean }
   const userId = req.userId ?? '00000000-0000-0000-0000-000000000000'
 
   let textToAnalyse = cvText ?? ''
+  let profileRowId: string | null = cvProfileId ?? null
 
-  // If no inline text, load from DB
-  if (!textToAnalyse && cvProfileId) {
+  // If a cvProfileId is given, load from DB (and return cached analysis if available)
+  if (cvProfileId) {
     const { data: cv, error } = await supabaseAdmin
       .from('cv_profiles')
-      .select('extracted_text')
+      .select('extracted_text, analysis, analysis_extracted_at')
       .eq('id', cvProfileId)
       .eq('user_id', userId)
       .single()
 
-    if (error || !cv?.extracted_text) {
-      res.status(404).json({ error: 'CV not found or has no extracted text' })
+    if (error || !cv) {
+      res.status(404).json({ error: 'CV not found' })
       return
     }
-    textToAnalyse = cv.extracted_text
+
+    // Return cached analysis if available and not forcing re-analysis
+    if (cv.analysis && !force) {
+      res.json({ ...cv.analysis, extractedAt: cv.analysis_extracted_at, cached: true })
+      return
+    }
+
+    if (!textToAnalyse && cv.extracted_text) {
+      textToAnalyse = cv.extracted_text
+    }
   }
 
   if (!textToAnalyse) {
-    res.status(400).json({ error: 'Either cvText or cvProfileId is required' })
+    res.status(400).json({ error: 'Either cvText or cvProfileId with extracted text is required' })
     return
   }
 
   try {
     const profile = await extractCandidateProfile(textToAnalyse)
-    // Remove raw cvText from the response payload (it's large and already known to the client)
     const { cvText: _cvText, ...profileWithoutText } = profile
-    res.json({
-      ...profileWithoutText,
-      extractedAt: new Date().toISOString(),
-    })
+    const extractedAt = new Date().toISOString()
+    const payload = { ...profileWithoutText, extractedAt }
+
+    // Persist analysis to the cv_profiles row (authenticated users with a real profile ID)
+    if (profileRowId && userId !== '00000000-0000-0000-0000-000000000000') {
+      await supabaseAdmin
+        .from('cv_profiles')
+        .update({ analysis: profileWithoutText, analysis_extracted_at: extractedAt })
+        .eq('id', profileRowId)
+        .eq('user_id', userId)
+    }
+
+    res.json(payload)
   } catch (err) {
-    console.error('CV analyse error:', err)
-    res.status(500).json({ error: 'Failed to analyse CV' })
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('CV analyse error:', message)
+    res.status(500).json({ error: 'Failed to analyse CV', detail: message })
   }
+})
+
+// GET /cv/:id/analysis — Return the saved analysis for a CV profile
+cvRouter.get('/cv/:id/analysis', async (req, res: Response) => {
+  const userId = req.userId ?? '00000000-0000-0000-0000-000000000000'
+  const { id } = req.params
+
+  const { data, error } = await supabaseAdmin
+    .from('cv_profiles')
+    .select('analysis, analysis_extracted_at')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .single()
+
+  if (error || !data) {
+    res.status(404).json({ error: 'CV profile not found' })
+    return
+  }
+
+  if (!data.analysis) {
+    res.status(404).json({ error: 'No analysis saved for this CV yet' })
+    return
+  }
+
+  res.json({ ...data.analysis, extractedAt: data.analysis_extracted_at, cached: true })
 })

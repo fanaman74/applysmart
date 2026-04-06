@@ -20,6 +20,8 @@ interface CvProfile {
   charCount: number
   createdAt: string
   extractedText?: string
+  analysis?: Record<string, unknown> | null
+  analysisExtractedAt?: string | null
 }
 
 interface PreviousRun {
@@ -58,13 +60,20 @@ export default function JobSearch() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [showRuns, setShowRuns] = useState(false)
 
-  // Load CV profile for authenticated users
+  // Load CV profile for authenticated users — also restores saved analysis
   useEffect(() => {
     if (!session) return
     apiClient.get<{ profiles: CvProfile[] }>('/cv/list').then(({ profiles }) => {
       if (profiles.length > 0) {
-        setCvProfile(profiles[0])
-        if (profiles[0].extractedText) setCvText(profiles[0].extractedText)
+        const cv = profiles[0]
+        setCvProfile(cv)
+        if (cv.extractedText) setCvText(cv.extractedText)
+        // Restore saved analysis so the user doesn't have to re-analyse
+        if (cv.analysis && cv.analysisExtractedAt) {
+          cvAnalysis.setProfile(
+            { ...cv.analysis, extractedAt: cv.analysisExtractedAt } as Parameters<typeof cvAnalysis.setProfile>[0]
+          )
+        }
       }
     }).catch(() => {})
   }, [session])
@@ -84,13 +93,14 @@ export default function JobSearch() {
     startSearch(cvProfileId, overrides, cvText)
   }, [startSearch, cvText])
 
-  const handleAnalyse = useCallback(async () => {
+  const handleAnalyse = useCallback(async (force = false) => {
     if (!cvText && !cvProfile?.id) return
     cvAnalysis.setAnalysing()
     try {
       const profile = await apiClient.post<Record<string, unknown>>('/cv/analyse', {
         cvText: cvText ?? undefined,
-        cvProfileId: !cvText ? cvProfile?.id : undefined,
+        cvProfileId: cvProfile?.id ?? undefined,
+        force: force || undefined,
       })
       cvAnalysis.setProfile(profile as Parameters<typeof cvAnalysis.setProfile>[0])
     } catch (err) {
@@ -134,35 +144,48 @@ export default function JobSearch() {
                 cv={cvProfile}
                 onDelete={() => { setCvProfile(null); setCvText(undefined); cvAnalysis.reset() }}
               />
-              {/* Analyse + View Report buttons */}
-              <div className="flex gap-2">
+
+              {/* Analysis action area */}
+              {cvAnalysis.status === 'complete' ? (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => navigate('/cv-report')}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-accent/15 border border-accent/30 px-3 py-2 text-sm font-medium text-accent hover:bg-accent/25 transition-colors"
+                    >
+                      <FileBarChart2 size={14} /> View Report
+                    </button>
+                    <button
+                      onClick={() => handleAnalyse(true)}
+                      className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-text-muted hover:text-text hover:border-accent/30 transition-colors"
+                      title="Re-analyse CV"
+                    >
+                      <ScanText size={13} /> Re-analyse
+                    </button>
+                  </div>
+                  <p className="text-xs text-success px-1">
+                    ✓ Profile analysed — {cvAnalysis.profile?.profession}, {cvAnalysis.profile?.yearsExperience} yrs
+                  </p>
+                </div>
+              ) : cvAnalysis.status === 'analysing' ? (
                 <button
-                  onClick={handleAnalyse}
-                  disabled={cvAnalysis.status === 'analysing'}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-medium text-accent hover:bg-accent/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled
+                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-medium text-accent opacity-70 cursor-not-allowed"
                 >
-                  {cvAnalysis.status === 'analysing' ? (
-                    <><Loader2 size={14} className="animate-spin" /> Analysing…</>
-                  ) : (
-                    <><ScanText size={14} /> Analyse CV</>
-                  )}
+                  <Loader2 size={14} className="animate-spin" /> Analysing…
                 </button>
-                {cvAnalysis.status === 'complete' && (
+              ) : (
+                <>
                   <button
-                    onClick={() => navigate('/cv-report')}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text hover:border-accent/40 transition-colors"
+                    onClick={() => handleAnalyse(false)}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-medium text-accent hover:bg-accent/20 transition-colors"
                   >
-                    <FileBarChart2 size={14} className="text-accent" /> View Report
+                    <ScanText size={14} /> Analyse CV
                   </button>
-                )}
-              </div>
-              {cvAnalysis.status === 'error' && (
-                <p className="text-xs text-error px-1">{cvAnalysis.error}</p>
-              )}
-              {cvAnalysis.status === 'complete' && (
-                <p className="text-xs text-success px-1">
-                  ✓ Profile analysed — {cvAnalysis.profile?.profession}, {cvAnalysis.profile?.yearsExperience} yrs
-                </p>
+                  {cvAnalysis.status === 'error' && (
+                    <p className="text-xs text-error px-1">{cvAnalysis.error}</p>
+                  )}
+                </>
               )}
             </div>
           ) : (

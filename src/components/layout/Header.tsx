@@ -106,6 +106,17 @@ export function Header() {
             ) : (
               <>
                 <Link
+                  to="/job-search"
+                  className={cn(
+                    'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    location.pathname === '/job-search'
+                      ? 'text-accent bg-accent/10'
+                      : 'text-text-secondary hover:text-text hover:bg-surface'
+                  )}
+                >
+                  Job Search
+                </Link>
+                <Link
                   to="/login"
                   className="rounded-lg px-3 py-2 text-sm font-medium text-text-secondary hover:text-text transition-colors"
                 >
@@ -113,7 +124,7 @@ export function Header() {
                 </Link>
                 <Link
                   to="/signup"
-                  className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-base hover:bg-accent-hover transition-colors"
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition-colors"
                 >
                   Get started
                 </Link>
