@@ -12,17 +12,20 @@ import type { AgentStatus, CandidateProfile } from '../../stores/jobSearchStore'
 /* ------------------------------------------------------------------ */
 
 const SOURCE_META: Record<string, { label: string; flag: string; colour: string }> = {
-  linkedin:        { label: 'LinkedIn Jobs',    flag: '💼', colour: 'bg-sky-500/15 border-sky-500/30 text-sky-400' },
-  indeed:          { label: 'Indeed',           flag: '🔍', colour: 'bg-blue-500/15 border-blue-500/30 text-blue-400' },
-  eurobrussels:    { label: 'EuroBrussels',     flag: '🇪🇺', colour: 'bg-amber-500/15 border-amber-500/30 text-amber-400' },
-  'euractiv-jobs': { label: 'Euractiv Jobs',    flag: '📰', colour: 'bg-purple-500/15 border-purple-500/30 text-purple-400' },
-  weworkremotely:  { label: 'We Work Remotely', flag: '🌍', colour: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' },
-  'google-jobs':   { label: 'Google Jobs',      flag: '🔎', colour: 'bg-rose-500/15 border-rose-500/30 text-rose-400' },
-  glassdoor:       { label: 'Glassdoor',        flag: '🚪', colour: 'bg-green-500/15 border-green-500/30 text-green-400' },
+  linkedin:          { label: 'LinkedIn Jobs',      flag: '💼', colour: 'bg-sky-500/15 border-sky-500/30 text-sky-400' },
+  indeed:            { label: 'Indeed',             flag: '🔍', colour: 'bg-blue-500/15 border-blue-500/30 text-blue-400' },
+  eurobrussels:      { label: 'EuroBrussels',       flag: '🇧🇪', colour: 'bg-amber-500/15 border-amber-500/30 text-amber-400' },
+  'euractiv-jobs':   { label: 'Euractiv Jobs',      flag: '📰', colour: 'bg-purple-500/15 border-purple-500/30 text-purple-400' },
+  'eu-careers':      { label: 'EU Careers (EPSO)',  flag: '🇪🇺', colour: 'bg-yellow-500/15 border-yellow-500/30 text-yellow-400' },
+  'eu-institutions': { label: 'EU Agencies & NATO', flag: '🏛️', colour: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400' },
+  impactpool:        { label: 'ImpactPool (UN/IO)', flag: '🌐', colour: 'bg-teal-500/15 border-teal-500/30 text-teal-400' },
+  weworkremotely:    { label: 'We Work Remotely',   flag: '🏠', colour: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' },
+  'google-jobs':     { label: 'Google Jobs',        flag: '🔎', colour: 'bg-rose-500/15 border-rose-500/30 text-rose-400' },
+  glassdoor:         { label: 'Glassdoor',          flag: '🚪', colour: 'bg-green-500/15 border-green-500/30 text-green-400' },
   // legacy
-  'hn-hiring':     { label: 'HN Who\'s Hiring', flag: '🟠', colour: 'bg-orange-500/15 border-orange-500/30 text-orange-400' },
-  remoteok:        { label: 'RemoteOK',          flag: '🌐', colour: 'bg-teal-500/15 border-teal-500/30 text-teal-400' },
-  arc:             { label: 'Arc.dev',           flag: '⚡', colour: 'bg-violet-500/15 border-violet-500/30 text-violet-400' },
+  'hn-hiring':       { label: 'HN Who\'s Hiring',  flag: '🟠', colour: 'bg-orange-500/15 border-orange-500/30 text-orange-400' },
+  remoteok:          { label: 'RemoteOK',           flag: '📡', colour: 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400' },
+  arc:               { label: 'Arc.dev',            flag: '⚡', colour: 'bg-violet-500/15 border-violet-500/30 text-violet-400' },
 }
 
 function sourceMeta(source: string) {

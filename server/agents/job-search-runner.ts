@@ -13,40 +13,98 @@ import type {
 // ─── Source descriptions — what each platform is and how to search it ─────────
 
 const SOURCE_DESCRIPTIONS: Record<string, string> = {
-  'linkedin': `Search LinkedIn Jobs (https://www.linkedin.com/jobs/search/?keywords=TITLE&location=Brussels) for relevant roles. Try the candidate's top 3 target titles as separate searches. Filter by date posted (last 30 days). Click into individual listings to read the full JD.`,
+  'linkedin': `Search LinkedIn Jobs (https://www.linkedin.com/jobs/search/?keywords=TITLE&location=Brussels%2C+Belgium) for relevant roles.
+1. Try the candidate's top 3-4 target titles as separate searches, always with location "Brussels, Belgium" or "Belgium"
+2. Filter by date posted: last 30 days
+3. Also search without location for remote-tagged roles
+4. Click into individual listings and read the full JD before scoring`,
 
-  'indeed': `Search Indeed Belgium (https://be.indeed.com/jobs?q=TITLE&l=Brussels or https://www.indeed.com/jobs?q=TITLE&l=Brussels%2C+Belgium). Try each of the candidate's top target titles. Also try the international Indeed (indeed.com). Read full job descriptions for each match.`,
+  'indeed': `Search Indeed Belgium (https://be.indeed.com/jobs?q=TITLE&l=Brussels) for relevant roles.
+1. Try each of the candidate's top target titles — use both English and French variants if the candidate is bilingual
+2. Also try https://www.indeed.com/jobs?q=TITLE&l=Brussels%2C+Belgium&radius=50
+3. Read full job descriptions for each match — don't rely only on the listing preview`,
 
-  'eurobrussels': `Search EuroBrussels (https://www.eurobrussels.com/job_search) — the premier Brussels job board for EU institutions, international organisations, NGOs, consultancies, and policy roles.
+  'eurobrussels': `Search EuroBrussels (https://www.eurobrussels.com) — premier Brussels job board for EU institutions, NGOs, consultancies, and international organisations.
+1. Try https://www.eurobrussels.com/job_search with the candidate's profession as search term
+2. Browse category pages directly:
+   - https://www.eurobrussels.com/jobs/eu_institution
+   - https://www.eurobrussels.com/jobs/operations
+   - https://www.eurobrussels.com/jobs/policy
+3. FALLBACK: use web_search with: site:eurobrussels.com "${candidate profession}" OR "${target title}"
+4. Read each listing in full before scoring`,
+
+  'euractiv-jobs': `Search Euractiv Jobs (https://jobs.euractiv.com) — EU policy, public affairs, and Brussels institution roles.
+1. Go to https://jobs.euractiv.com and keyword-search the candidate's target titles
+2. Browse "Technology", "Digital", and "Management" categories
+3. FALLBACK: use web_search with: site:jobs.euractiv.com IT OR "project manager" OR "digital transformation"
+4. Read each listing fully before scoring`,
+
+  'eu-careers': `Search the official EU Careers portal (https://eu-careers.europa.eu) which covers ALL EU institutions and agencies: European Commission, European Parliament, Council of the EU, CERT-EU, EDA, ENISA, EEAS, Europol, Eurojust, and more.
 
 STEP-BY-STEP:
-1. Go to https://www.eurobrussels.com/job_search and search using the candidate's profession/title
-2. Also browse category pages:
-   - https://www.eurobrussels.com/jobs/eu_institution (EU institution jobs)
-   - https://www.eurobrussels.com/jobs/operations (IT/operations roles)
-   - https://www.eurobrussels.com/jobs/policy (policy roles)
-3. Alternatively use Google: search 'site:eurobrussels.com "IT project manager" OR "IT officer" OR "project manager"'
-4. Click into each listing and read the full job description before scoring.`,
+1. Go to https://eu-careers.europa.eu/en/job-opportunities and search for the candidate's target titles
+2. Filter by: Contract Agent (CA) or Temporary Agent (TA) grades FG IV or above
+3. Also search for "IT" and "ICT" and "digital" in the keyword field
+4. Check for open competitions (EPSO) and direct agency recruitments
+5. Key portals to check via web_search:
+   - 'site:eu-careers.europa.eu "IT" OR "ICT" OR "digital" OR "project manager" 2026'
+   - 'site:cert.europa.eu vacancies'
+   - 'site:eeas.europa.eu vacancies IT'
+6. Read each listing fully — note grade level (FG III/IV, AST, AD), closing date, and salary scale`,
 
-  'euractiv-jobs': `Search Euractiv Jobs (https://jobs.euractiv.com) — a specialist job board for EU policy, public affairs, international organisations, and Brussels institutions.
+  'eu-institutions': `Search EU agency and international institution career portals DIRECTLY. These organisations post jobs independently of EPSO:
+
+PORTALS TO CHECK (search each via web_search):
+- NATO: 'site:nato.taleo.net "IT" OR "CIS" OR "communications" OR "project manager" 2026'
+- EIB (European Investment Bank): 'site:erecruitment.eib.org "IT" OR "project manager"' OR search https://www.eib.org/en/careers
+- ECB (European Central Bank): 'site:talent.ecb.europa.eu "IT" OR "technology" OR "digital"'
+- EMA: 'site:ema.europa.eu careers "IT" OR "digital"'
+- Eurocontrol: 'site:jobs.eurocontrol.int "IT" OR "project manager"'
+- EUMETSAT: 'site:eumetsat.int careers'
+- ESA (European Space Agency): 'site:esa.int careers "IT"'
+- Council of EU direct: 'site:consilium.europa.eu jobs "IT"'
+
+ALSO CHECK:
+- ImpactPool for UN/international org roles: 'site:impactpool.org "IT" OR "ICT" OR "project manager" Brussels OR Belgium'
+- ReliefWeb: 'site:reliefweb.int jobs "IT manager" OR "IT officer" Brussels'
+
+For each role found: read the full JD, note the grade/salary scale, contract type, and deadline`,
+
+  'impactpool': `Search ImpactPool (https://www.impactpool.org) — the leading job board for international organisations: UN system, EU agencies, World Bank, OSCE, Red Cross, and NGOs.
 
 STEP-BY-STEP:
-1. Go to https://jobs.euractiv.com and use the keyword search with the candidate's target titles
-2. Filter by "Technology" or "Operations" category if available
-3. Also try a Google search: 'site:jobs.euractiv.com "IT" OR "project manager" OR "digital"'
-4. Euractiv lists roles from EU institutions, think tanks, NGOs, EU agencies, and consultancies. Read the full JD for each match.`,
+1. Go to https://www.impactpool.org/jobs and search: IT manager OR IT officer OR project manager
+2. Filter location: Brussels, Belgium, Luxembourg, Europe
+3. Also search: 'site:impactpool.org "IT" "Brussels" OR "Belgium" 2026'
+4. Relevant organisations for this profile: FAO, UNDP, UNOPS, OSCE, WFP, IOM, Council of Europe
+5. Also check:
+   - https://www.unjobs.org for UN system roles
+   - https://jobs.osce.org for OSCE roles
+   - https://www.councilofeurope.eu/careers for CoE roles
+6. Read full JDs and note contract type (regular, fixed-term, consultant)`,
 
-  'weworkremotely': `Search We Work Remotely (https://weworkremotely.com) for remote roles matching the candidate's profile. Navigate to https://weworkremotely.com/remote-jobs/search?term=TITLE for each target title. Check all categories — not just technology. Also look at "Management & Finance" and "Operations" categories.`,
+  'weworkremotely': `Search We Work Remotely (https://weworkremotely.com) for remote roles.
+1. Try https://weworkremotely.com/remote-jobs/search?term=TITLE for each target title
+2. Check "Management & Finance" and "Operations" categories, not just tech
+3. Focus on roles where candidate's skills (Microsoft 365, project management, PRINCE2) are valuable remotely`,
 
-  'google-jobs': `Use web search to find jobs via Google Jobs and direct employer career pages.
-Search strategies:
-1. Use the candidate's Boolean combo queries directly as search terms
-2. Search '"IT project manager" Brussels site:greenhouse.io OR site:lever.co OR site:ashby.com'
-3. Search 'EU institutions "IT officer" OR "project manager" apply site:workday.com OR site:taleo.net'
-4. Check results from EU agency career portals (EPSO, EMA, EIB, Frontex, Europol etc.)
-Read each job listing fully before scoring.`,
+  'google-jobs': `Use web search to find jobs via Google Jobs aggregation and direct employer career pages.
 
-  'glassdoor': `Search Glassdoor (https://www.glassdoor.com/Job/brussels-it-project-manager-jobs-SRCH_IL.0,8_IC2660204_KO9,27.htm or similar URL pattern) for jobs. Also try https://www.glassdoor.co.uk/Job/ with the candidate's titles and Brussels as location. Read full JDs including salary info where visible.`,
+SEARCHES TO RUN (run all of these):
+1. The candidate's top combo_queries as-is (Boolean strings)
+2. '"IT project manager" Brussels 2026 apply'
+3. '"IT manager" Belgium "Microsoft 365" OR "PRINCE2" site:greenhouse.io OR site:lever.co OR site:ashby.com'
+4. '"digital transformation" "IT manager" Brussels Belgium job 2026'
+5. 'Sopra Steria OR Atos OR CGI OR Accenture "IT project manager" Brussels careers 2026'
+6. '"programme manager" OR "project manager" "EU institutions" Brussels 2026 apply'
+
+For each result: fetch the actual job page, read the full JD, score it`,
+
+  'glassdoor': `Search Glassdoor for jobs.
+1. Go to https://www.glassdoor.com/Job/ and search for each target title in Brussels/Belgium
+2. Also try https://www.glassdoor.co.uk/Job/
+3. Note any salary information visible on listings
+4. Read full JDs before scoring`,
 }
 
 interface JobSearchAgent {
@@ -304,6 +362,7 @@ export async function runJobSearch(options: JobSearchRunnerOptions): Promise<Job
 
   const validSources: JobSearchSource[] = [
     'linkedin', 'indeed', 'eurobrussels', 'euractiv-jobs',
+    'eu-careers', 'eu-institutions', 'impactpool',
     'weworkremotely', 'google-jobs', 'glassdoor',
   ]
 

@@ -10,19 +10,33 @@ interface JobCardProps {
 }
 
 const SOURCE_LABELS: Record<string, string> = {
-  linkedin: 'LinkedIn',
-  indeed: 'Indeed',
-  eurobrussels: 'EuroBrussels',
-  'euractiv-jobs': 'Euractiv',
-  weworkremotely: 'WWR',
-  'google-jobs': 'Google Jobs',
-  glassdoor: 'Glassdoor',
+  linkedin:          'LinkedIn',
+  indeed:            'Indeed',
+  eurobrussels:      'EuroBrussels',
+  'euractiv-jobs':   'Euractiv',
+  'eu-careers':      'EU Careers',
+  'eu-institutions': 'EU Agencies',
+  impactpool:        'ImpactPool',
+  weworkremotely:    'WWR',
+  'google-jobs':     'Google Jobs',
+  glassdoor:         'Glassdoor',
   // legacy
-  'hn-hiring': 'HN Hiring',
-  remoteok: 'RemoteOK',
-  arc: 'Arc.dev',
-  builtin: 'Built In',
-  wellfound: 'Wellfound',
+  'hn-hiring':       'HN Hiring',
+  remoteok:          'RemoteOK',
+  arc:               'Arc.dev',
+  builtin:           'Built In',
+  wellfound:         'Wellfound',
+  // hiremeapp sources
+  nato_careers:      'NATO',
+  eu_careers:        'EU Careers',
+  eeas_vacancies:    'EEAS',
+  cert_eu:           'CERT-EU',
+  eib_careers:       'EIB',
+  ecb_careers:       'ECB',
+  frontex:           'Frontex',
+  eda:               'EDA',
+  google_aggregation:'Google',
+  nato:              'NATO',
 }
 
 const STATUS_STYLES: Record<string, string> = {

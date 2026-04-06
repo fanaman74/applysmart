@@ -25,13 +25,16 @@ interface SearchConfigFormProps {
 }
 
 const SOURCE_OPTIONS = [
-  { id: 'linkedin', label: 'LinkedIn Jobs' },
-  { id: 'indeed', label: 'Indeed' },
-  { id: 'eurobrussels', label: 'EuroBrussels' },
-  { id: 'euractiv-jobs', label: 'Euractiv Jobs' },
-  { id: 'weworkremotely', label: 'We Work Remotely' },
-  { id: 'google-jobs', label: 'Google Jobs' },
-  { id: 'glassdoor', label: 'Glassdoor' },
+  { id: 'linkedin',        label: 'LinkedIn Jobs',      group: 'General' },
+  { id: 'indeed',          label: 'Indeed',             group: 'General' },
+  { id: 'google-jobs',     label: 'Google Jobs',        group: 'General' },
+  { id: 'glassdoor',       label: 'Glassdoor',          group: 'General' },
+  { id: 'eu-careers',      label: 'EU Careers (EPSO)',  group: 'EU / International' },
+  { id: 'eu-institutions', label: 'EU Agencies & NATO', group: 'EU / International' },
+  { id: 'impactpool',      label: 'ImpactPool (UN/IO)', group: 'EU / International' },
+  { id: 'eurobrussels',    label: 'EuroBrussels',       group: 'EU / International' },
+  { id: 'euractiv-jobs',   label: 'Euractiv Jobs',      group: 'EU / International' },
+  { id: 'weworkremotely',  label: 'We Work Remotely',   group: 'Remote' },
 ]
 
 const DEFAULT_CONFIG: SearchConfig = {
@@ -40,9 +43,9 @@ const DEFAULT_CONFIG: SearchConfig = {
   experienceLevel: 'senior',
   roleTypes: '',
   avoidKeywords: '',
-  targetSources: ['linkedin', 'indeed', 'eurobrussels', 'euractiv-jobs', 'google-jobs'],
+  targetSources: ['linkedin', 'indeed', 'eu-careers', 'eu-institutions', 'google-jobs'],
   scoreThreshold: 65,
-  includeNoSalary: false,
+  includeNoSalary: true,
   includeContract: false,
   maxPostingAgeDays: 30,
 }
@@ -143,21 +146,29 @@ export function SearchConfigForm({ cvProfileId, onStartSearch, isSearching }: Se
       {/* Job sources */}
       <div>
         <label className="block text-xs font-medium text-text-secondary mb-2">Job Sources</label>
-        <div className="flex flex-wrap gap-2">
-          {SOURCE_OPTIONS.map((source) => (
-            <button
-              key={source.id}
-              onClick={() => toggleSource(source.id)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                config.targetSources.includes(source.id)
-                  ? 'bg-accent/20 text-accent border border-accent/30'
-                  : 'bg-surface text-text-secondary border border-border hover:border-accent/30'
-              }`}
-            >
-              {source.label}
-            </button>
-          ))}
-        </div>
+        {(['General', 'EU / International', 'Remote'] as const).map((group) => {
+          const groupSources = SOURCE_OPTIONS.filter((s) => s.group === group)
+          return (
+            <div key={group} className="mb-2">
+              <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">{group}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {groupSources.map((source) => (
+                  <button
+                    key={source.id}
+                    onClick={() => toggleSource(source.id)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                      config.targetSources.includes(source.id)
+                        ? 'bg-accent/20 text-accent border border-accent/30'
+                        : 'bg-surface text-text-secondary border border-border hover:border-accent/30'
+                    }`}
+                  >
+                    {source.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Remote toggle */}
