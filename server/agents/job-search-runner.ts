@@ -30,7 +30,7 @@ const SOURCE_DESCRIPTIONS: Record<string, string> = {
    - https://www.eurobrussels.com/jobs/eu_institution
    - https://www.eurobrussels.com/jobs/operations
    - https://www.eurobrussels.com/jobs/policy
-3. FALLBACK: use web_search with: site:eurobrussels.com "${candidate profession}" OR "${target title}"
+3. FALLBACK: use web_search with: site:eurobrussels.com "\${candidate profession}" OR "\${target title}"
 4. Read each listing in full before scoring`,
 
   'euractiv-jobs': `Search Euractiv Jobs (https://jobs.euractiv.com) — EU policy, public affairs, and Brussels institution roles.
