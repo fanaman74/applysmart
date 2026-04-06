@@ -109,7 +109,7 @@ jobSearchRouter.post('/job-search/generate-config', async (req, res: Response) =
   try {
     const { data: cv, error: cvError } = await supabaseAdmin
       .from('cv_profiles')
-      .select('extracted_text')
+      .select('extracted_text, candidate_profile, candidate_profile_extracted_at')
       .eq('id', cvProfileId)
       .eq('user_id', userId)
       .single()
@@ -119,12 +119,28 @@ jobSearchRouter.post('/job-search/generate-config', async (req, res: Response) =
       return
     }
 
-    const profile = await extractCandidateProfile(cv.extracted_text)
+    // Use cached profile if available
+    let profile: Awaited<ReturnType<typeof extractCandidateProfile>>
+    if (cv.candidate_profile && (cv.candidate_profile as Record<string, unknown>).name) {
+      profile = { ...(cv.candidate_profile as typeof profile), cvText: cv.extracted_text }
+    } else {
+      profile = await extractCandidateProfile(cv.extracted_text)
+      // Save it
+      const { cvText: _cvText, ...profileWithoutText } = profile
+      await supabaseAdmin
+        .from('cv_profiles')
+        .update({
+          candidate_profile: profileWithoutText,
+          candidate_profile_extracted_at: new Date().toISOString(),
+        })
+        .eq('id', cvProfileId)
+        .eq('user_id', userId)
+    }
 
     // Build sensible defaults from the profile
     const suggestedConfig = {
       cvProfileId,
-      remoteOnly: true,
+      remoteOnly: false,
       minSalary: null,
       companySizeMin: 20,
       experienceLevel: profile.level,
@@ -134,9 +150,9 @@ jobSearchRouter.post('/job-search/generate-config', async (req, res: Response) =
       avoidIndustries: [],
       prioritizeKeywords: profile.primaryStack,
       prioritizeIndustries: profile.industries,
-      targetSources: ['hn-hiring', 'weworkremotely', 'remoteok', 'arc', 'builtin', 'wellfound'],
+      targetSources: ['linkedin', 'indeed', 'eu-careers', 'eu-institutions', 'google-jobs'],
       maxPostingAgeDays: 30,
-      includeNoSalary: false,
+      includeNoSalary: true,
       includeContract: false,
       scoreThreshold: 65,
     }
@@ -307,12 +323,14 @@ jobSearchRouter.post('/job-search/start', async (req, res: Response) => {
   let runId: string | null = null
 
   try {
-    // Load CV — use inline text if provided (unauthenticated), otherwise load from DB
+    // Load CV text and any cached candidate profile
     let cvExtractedText = inlineCvText ?? ''
+    let cachedProfile: ReturnType<typeof Object.assign> | null = null
+
     if (cvProfileId && !inlineCvText) {
       const { data: cv, error: cvError } = await supabaseAdmin
         .from('cv_profiles')
-        .select('extracted_text, filename')
+        .select('extracted_text, filename, candidate_profile, candidate_profile_extracted_at')
         .eq('id', cvProfileId)
         .eq('user_id', userId)
         .single()
@@ -323,6 +341,7 @@ jobSearchRouter.post('/job-search/start', async (req, res: Response) => {
         return
       }
       cvExtractedText = cv.extracted_text
+      if (cv.candidate_profile) cachedProfile = cv.candidate_profile as ReturnType<typeof Object.assign>
     }
 
     if (!cvExtractedText) {
@@ -339,7 +358,7 @@ jobSearchRouter.post('/job-search/start', async (req, res: Response) => {
       .single()
 
     const config: SearchConfig = {
-      remoteOnly: configOverrides?.remoteOnly ?? dbConfig?.remote_only ?? true,
+      remoteOnly: configOverrides?.remoteOnly ?? dbConfig?.remote_only ?? false,
       minSalary: configOverrides?.minSalary ?? dbConfig?.min_salary ?? null,
       companySizeMin: configOverrides?.companySizeMin ?? dbConfig?.company_size_min ?? 10,
       experienceLevel: configOverrides?.experienceLevel ?? dbConfig?.experience_level ?? 'mid',
@@ -348,27 +367,42 @@ jobSearchRouter.post('/job-search/start', async (req, res: Response) => {
       avoidCompanies: configOverrides?.avoidCompanies ?? dbConfig?.avoid_companies ?? [],
       avoidIndustries: configOverrides?.avoidIndustries ?? dbConfig?.avoid_industries ?? [],
       prioritizeKeywords: configOverrides?.prioritizeKeywords ?? dbConfig?.prioritize_keywords ?? [],
-      prioritizeIndustries:
-        configOverrides?.prioritizeIndustries ?? dbConfig?.prioritize_industries ?? [],
+      prioritizeIndustries: configOverrides?.prioritizeIndustries ?? dbConfig?.prioritize_industries ?? [],
       targetSources: configOverrides?.targetSources ?? dbConfig?.target_sources ?? [
-        'hn-hiring',
-        'weworkremotely',
-        'remoteok',
-        'arc',
-        'builtin',
-        'wellfound',
+        'linkedin', 'indeed', 'eu-careers', 'eu-institutions', 'google-jobs',
       ],
       maxPostingAgeDays: configOverrides?.maxPostingAgeDays ?? dbConfig?.max_posting_age_days ?? 30,
-      includeNoSalary: configOverrides?.includeNoSalary ?? dbConfig?.include_no_salary ?? false,
+      includeNoSalary: configOverrides?.includeNoSalary ?? dbConfig?.include_no_salary ?? true,
       includeContract: configOverrides?.includeContract ?? dbConfig?.include_contract ?? false,
       scoreThreshold: configOverrides?.scoreThreshold ?? dbConfig?.score_threshold ?? 65,
     }
 
-    sendEvent('status', { message: 'Extracting candidate profile from CV...' })
+    // Use cached candidate profile if available, otherwise extract fresh
+    let profile: Awaited<ReturnType<typeof extractCandidateProfile>>
 
-    // Extract candidate profile
-    const profile = await extractCandidateProfile(cvExtractedText)
-    sendEvent('profile', { profile })
+    if (cachedProfile && cachedProfile.name && cachedProfile.targetTitles) {
+      sendEvent('status', { message: 'Loaded saved candidate profile...' })
+      // Re-attach cvText (not stored in DB) so tailoring can use it
+      profile = { ...cachedProfile, cvText: cvExtractedText } as typeof profile
+      sendEvent('profile', { profile, cached: true })
+    } else {
+      sendEvent('status', { message: 'Extracting candidate profile from CV...' })
+      profile = await extractCandidateProfile(cvExtractedText)
+      sendEvent('profile', { profile })
+
+      // Persist for future searches (authenticated users with a real cv_profile row only)
+      if (cvProfileId && userId !== '00000000-0000-0000-0000-000000000000') {
+        const { cvText: _cvText, ...profileWithoutText } = profile
+        await supabaseAdmin
+          .from('cv_profiles')
+          .update({
+            candidate_profile: profileWithoutText,
+            candidate_profile_extracted_at: new Date().toISOString(),
+          })
+          .eq('id', cvProfileId)
+          .eq('user_id', userId)
+      }
+    }
 
     // Create run record (skip DB for anonymous users)
     const isAnonymous = userId === '00000000-0000-0000-0000-000000000000'

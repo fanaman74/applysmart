@@ -1,4 +1,4 @@
-import { FileText, RefreshCw, Trash2 } from 'lucide-react'
+import { FileText, RefreshCw, Trash2, CheckCircle2, Brain } from 'lucide-react'
 import { Badge } from '../common/Badge'
 import { Button } from '../common/Button'
 
@@ -8,6 +8,8 @@ interface CvProfile {
   fileType: string
   charCount: number
   createdAt: string
+  candidateProfile?: Record<string, unknown> | null
+  candidateProfileExtractedAt?: string | null
 }
 
 interface CvPreviewProps {
@@ -23,44 +25,58 @@ export function CvPreview({ cv, onReplace, onDelete }: CvPreviewProps) {
     year: 'numeric',
   })
 
+  const hasProfile = Boolean(cv.candidateProfile)
+  const profileName = cv.candidateProfile?.name as string | undefined
+  const profession = cv.candidateProfile?.profession as string | undefined
+
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-5">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-surface">
-        <FileText size={24} className="text-text-secondary" />
-      </div>
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center gap-3 p-4">
+        {/* Icon */}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface border border-border">
+          <FileText size={20} className="text-text-secondary" />
+        </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="truncate text-sm font-medium text-text">{cv.filename}</p>
+        {/* Info */}
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <p className="truncate text-sm font-medium text-text">{cv.filename}</p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="accent">{cv.fileType.toUpperCase()}</Badge>
+            <Badge mono>{cv.charCount.toLocaleString()} chars</Badge>
+            <span className="text-xs text-text-muted">Uploaded {uploadDate}</span>
+          </div>
+        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="accent">{cv.fileType.toUpperCase()}</Badge>
-          <Badge mono>{cv.charCount.toLocaleString()} chars</Badge>
-          <span className="text-xs text-text-muted">Uploaded {uploadDate}</span>
+        {/* Actions */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {onReplace && (
+            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={onReplace}>
+              Replace
+            </Button>
+          )}
+          {onDelete && (
+            <Button variant="ghost" size="sm" icon={Trash2} onClick={() => onDelete(cv.id)} />
+          )}
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
-        {onReplace && (
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={RefreshCw}
-            onClick={onReplace}
-          >
-            Replace
-          </Button>
-        )}
-        {onDelete && (
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={Trash2}
-            onClick={() => onDelete(cv.id)}
-          >
-            Delete
-          </Button>
-        )}
-      </div>
+      {/* Candidate profile status strip */}
+      {hasProfile ? (
+        <div className="flex items-center gap-2 border-t border-success/20 bg-success/5 px-4 py-2">
+          <CheckCircle2 size={13} className="text-success shrink-0" />
+          <p className="text-xs text-success font-medium truncate">
+            Profile saved — {profileName}{profession ? `, ${profession}` : ''}
+          </p>
+          <span className="ml-auto text-[10px] text-text-muted shrink-0">Search ready</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 border-t border-border bg-surface/40 px-4 py-2">
+          <Brain size={13} className="text-text-muted shrink-0" />
+          <p className="text-xs text-text-muted">
+            Profile will be extracted on first search
+          </p>
+        </div>
+      )}
     </div>
   )
 }

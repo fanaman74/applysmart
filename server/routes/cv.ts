@@ -111,13 +111,13 @@ cvRouter.post(
   },
 )
 
-// GET /cv/list — List current user's CV profiles (includes saved analysis if available)
+// GET /cv/list — List current user's CV profiles (includes saved analysis + candidate profile)
 cvRouter.get('/cv/list', async (req, res: Response) => {
   const userId = req.userId ?? '00000000-0000-0000-0000-000000000000'
 
   const { data, error } = await supabaseAdmin
     .from('cv_profiles')
-    .select('id, filename, file_type, extracted_text, analysis, analysis_extracted_at, created_at')
+    .select('id, filename, file_type, extracted_text, analysis, analysis_extracted_at, candidate_profile, candidate_profile_extracted_at, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
@@ -135,6 +135,8 @@ cvRouter.get('/cv/list', async (req, res: Response) => {
     extractedText: row.extracted_text ?? '',
     analysis: row.analysis ?? null,
     analysisExtractedAt: row.analysis_extracted_at ?? null,
+    candidateProfile: row.candidate_profile ?? null,
+    candidateProfileExtractedAt: row.candidate_profile_extracted_at ?? null,
   }))
 
   res.json({ profiles })

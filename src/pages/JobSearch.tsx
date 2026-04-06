@@ -22,6 +22,8 @@ interface CvProfile {
   extractedText?: string
   analysis?: Record<string, unknown> | null
   analysisExtractedAt?: string | null
+  candidateProfile?: Record<string, unknown> | null
+  candidateProfileExtractedAt?: string | null
 }
 
 interface PreviousRun {
