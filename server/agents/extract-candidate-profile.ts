@@ -20,9 +20,13 @@ CRITICAL EXTRACTION RULES — read carefully before extracting:
 
 4. "achievements": Extract 4–6 metric-backed bullets directly from the CV text. Quote real numbers and outcomes — do not invent metrics.
 
-5. "targetTitles": 6–10 realistic job titles the candidate should search for, matching their actual field and seniority.
+5. "education": Extract EVERY qualification listed in the CV — degrees, diplomas, certificates, professional qualifications. Look for sections labelled "Education", "Qualifications", "Academic Background", or similar. Include ALL entries, not just the highest degree. Each entry must have "degree" (full qualification name), "school" (institution name), and "status" ("completed", "in progress", or "unknown").
 
-6. "searchQueries": Reflect their real location and profession in all queries.
+6. "certifications": Extract ALL professional certifications and courses from the CV — PRINCE2, PMP, CISSP, Microsoft certs, etc. Look in sections labelled "Certifications", "Professional Development", "Training", or within individual job descriptions.
+
+7. "targetTitles": 6–10 realistic job titles the candidate should search for, matching their actual field and seniority.
+
+8. "searchQueries": Reflect their real location and profession in all queries.
 
 Return this exact JSON structure:
 {
@@ -38,8 +42,8 @@ Return this exact JSON structure:
   "targetTitles": ["6-10 titles to search for"],
   "industries": ["sectors and org types"],
   "achievements": ["4-6 metric-backed bullets copied from the CV"],
-  "education": [{"school": "", "degree": "", "status": ""}],
-  "certifications": ["list from CV"],
+  "education": [{"degree": "full qualification name", "school": "institution name", "status": "completed|in progress|unknown"}],
+  "certifications": ["every certification and professional qualification from the CV"],
   "languages": {"native": [], "working": []},
   "summary": "VERBATIM text from CV professional summary section",
   "remotePreference": "remote|hybrid|onsite|flexible",
