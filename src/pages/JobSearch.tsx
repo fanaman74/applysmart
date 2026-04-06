@@ -5,7 +5,7 @@ import { useJobSearch } from '../hooks/useJobSearch'
 import { useAuthStore } from '../stores/authStore'
 import { useCvAnalysisStore } from '../stores/cvAnalysisStore'
 import { SearchConfigForm } from '../components/job-search/SearchConfigForm'
-import { SearchProgress } from '../components/job-search/SearchProgress'
+import { SearchModal } from '../components/job-search/SearchModal'
 import { JobCard } from '../components/job-search/JobCard'
 import { Card } from '../components/common/Card'
 import { Button } from '../components/common/Button'
@@ -59,6 +59,15 @@ export default function JobSearch() {
   const [sortBy, setSortBy] = useState<SortKey>('score')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [showRuns, setShowRuns] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [searchSources, setSearchSources] = useState<string[]>([])
+
+  // Auto-open modal when search begins, keep open until user closes after completion
+  useEffect(() => {
+    if (status === 'extracting-profile' || status === 'searching') {
+      setModalOpen(true)
+    }
+  }, [status])
 
   // Load CV profile for authenticated users — also restores saved analysis
   useEffect(() => {
@@ -90,6 +99,10 @@ export default function JobSearch() {
   }, [])
 
   const handleStartSearch = useCallback((cvProfileId: string, overrides?: Record<string, unknown>) => {
+    // Capture the target sources for the modal
+    if (overrides?.targetSources && Array.isArray(overrides.targetSources)) {
+      setSearchSources(overrides.targetSources as string[])
+    }
     startSearch(cvProfileId, overrides, cvText)
   }, [startSearch, cvText])
 
@@ -123,6 +136,17 @@ export default function JobSearch() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
+
+      {/* Search Progress Modal */}
+      <SearchModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        searchStatus={status}
+        agents={agents}
+        profile={profile}
+        totalFound={jobs.length}
+        sources={searchSources}
+      />
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-text flex items-center gap-2">
@@ -257,14 +281,23 @@ export default function JobSearch() {
             </div>
           )}
 
-          {/* In-progress */}
+          {/* In-progress: minimal inline indicator (detail is in the modal) */}
           {isSearching && (
-            <SearchProgress
-              status={status}
-              agents={agents}
-              profile={profile}
-              totalFound={jobs.length}
-            />
+            <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 flex items-center gap-3">
+              <Loader2 size={18} className="animate-spin text-accent shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-text">
+                  {status === 'extracting-profile' ? 'Extracting profile from CV…' : `Searching ${agents.filter(a => a.status === 'running').length} sources in parallel…`}
+                </p>
+                <p className="text-xs text-text-muted">{jobs.length > 0 ? `${jobs.length} jobs found so far` : 'Starting up…'}</p>
+              </div>
+              <button
+                onClick={() => setModalOpen(true)}
+                className="shrink-0 rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
+              >
+                View Details
+              </button>
+            </div>
           )}
 
           {/* Live results during search */}
